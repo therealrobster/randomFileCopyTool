@@ -10,44 +10,39 @@ import csv
 import random
 from shutil import copyfile
 
+
 def loadFileNames(fileTypeToSearchFor, pathToSearch):
-	
-	global fileCount
 	global fileList
 	global fileSizeTotalOriginal
 
-
 	if os.path.exists(pathToSearch):
 
-		#reset file count
-		fileCount = 0
+		# reset file count
 
 		fileExtensionUpper = fileTypeToSearchFor.upper()
 		fileExtensionLower = fileTypeToSearchFor.lower()
 
 		print("searching path for matching files... please be patient")
 
-		#add filenames to the list
+		# add filenames to the list
 		for root, dirs, files in os.walk(pathToSearch):
 			for file in files:
 				if file.endswith(fileTypeToSearchFor) or file.endswith(fileExtensionUpper) or file.endswith(fileExtensionLower):
 
-					#add to list (depreciated soon)
+					# add to list (depreciated soon)
 					fileList.append(file)
 
-					#count our files, why not
-					fileCount += 1
+					# get file name info
+					fileNameToGetInfo = getFileNameInfo(file, root)
 
-					#get filesize
-					fileNameToGetInfo = root+"/"+file
-					statinfo = os.stat(fileNameToGetInfo)
-					fileSize = statinfo.st_size
+					# get filesize
+					fileSize = getFilesize(fileNameToGetInfo)
 
-					#increment the count for a bit of info to show user
+					# increment the count for a bit of info to show user
 					fileSizeTotalOriginal += fileSize 
 
-					#write CSV file
-					out = csv.writer(open("fileList.csv","a"), delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+					# write CSV file
+					out = csv.writer(open("fileList.csv", "a"), delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 					data = [fileNameToGetInfo, str(fileSize)]
 					out.writerow(data)
 	else:
@@ -58,25 +53,36 @@ def loadFileNames(fileTypeToSearchFor, pathToSearch):
 		exit()
 
 
+def getFilesize(fileNameToGetInfo):
+	statinfo = os.stat(fileNameToGetInfo)
+	fileSize = statinfo.st_size
+	return fileSize
+
+
+def getFileNameInfo(file, root):
+	fileNameToGetInfo = root + "/" + file
+	return fileNameToGetInfo
+
+
 def showFiles(fileList):
 	for found in fileList:
 		print("Found : ",str(found))
 
 
-
 def deleteCSVFile():
-	#remove the CSV file each run, that we we don't append and have duplicates in our CSV
+	# remove the CSV file each run, that we we don't append and have duplicates in our CSV
 	try:
-	    os.remove('fileList.csv')
+		os.remove('fileList.csv')
 	except OSError:
-	    pass
+		pass
 
 
 def pickRandomRow():
 	with open('fileList.csv') as f:
 		reader = csv.reader(f)
 		chosen_row = random.choice(list(reader))
-		return(chosen_row)
+		return chosen_row
+
 
 def chooseSomeFiles(bytesToFill):
 	# this is the idea:
@@ -128,8 +134,8 @@ def finalCopy(destinationPath):
 	global storageList
 
 	if not os.path.exists(destinationPath):
-	    os.makedirs(destinationPath)
-	    print("created folder 'copiedFiles' under current folder")
+		os.makedirs(destinationPath)
+		print("created folder 'copiedFiles' under current folder")
 
 	for item in storageList:
 		filename = os.path.basename(item[0])
@@ -149,26 +155,26 @@ def finalCopy(destinationPath):
 # photos
 ############################################
 
-#setup the variables as empty for first run
+# setup the variables as empty for first run
 fileList 				= [] 	# probably depreciated soon, ignore
 fileCount 				= 0		# just how many files we have in total when doing initial search
 fileSizeTotalOriginal 	= 0		# How much size our original file search was
 storageList 			= []	# A list of filenames that we will add to as our final list of files to copy
 storageListSize			= 0		# How many bytes in total we're going to be copying, this grows as we add more files to the list for comparison later
 
-#delete any temp files before run for a clean start
+# delete any temp files before run for a clean start
 deleteCSVFile()
 
-#compile a list of files of a certail filetype only
+# compile a list of files of a certail filetype only
 fileTypeToSearchFor = input("What file type are we looking for?  (example 'jpg'): ")
 pathToSearch = input("Enter path to search.  (Example : /Users/miguel/Pictures) ")
 loadFileNames(fileTypeToSearchFor, pathToSearch)
 
-print ("Looking in ", pathToSearch)
-print ("Total files found: ", str(fileCount))
-print ("Total file size of: ", round(fileSizeTotalOriginal / 1073741824,2), "GB / ", fileSizeTotalOriginal, "bytes")
+print("Looking in ", pathToSearch)
+print("Total files found: ", str(len(fileList)))
+print("Total file size of: ", round(fileSizeTotalOriginal / 1073741824,2), "GB / ", fileSizeTotalOriginal, "bytes")
 
-#ask how many GB of files the user wants to copy
+# ask how many GB of files the user wants to copy
 GBToFill = input("How many GB of files do you want to copy? ")
 bytesToFill = int(GBToFill) * 1073741824
 print(str(GBToFill), "GB is ", str(bytesToFill), "bytes")
@@ -178,9 +184,9 @@ if int(bytesToFill) > int(fileSizeTotalOriginal):
 	print("exiting... please run again")
 	exit()
 else:
-	#search through CSV and randomly pick bytesToFill's worth of files
+	# search through CSV and randomly pick bytesToFill's worth of files
 	chooseSomeFiles(bytesToFill)
 
-	#copy the files to a destination folder within the current folder
+	# copy the files to a destination folder within the current folder
 	destinationPath = input("Enter destination path. (Example: /Users/miguel/Desktop/randomFiles)")
 	finalCopy(destinationPath)
